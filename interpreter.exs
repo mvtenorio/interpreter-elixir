@@ -57,7 +57,12 @@ defmodule Lexer do
 end
 
 defmodule Interpreter do
-  def expr(params) do
+  def eval(text) do
+    tokens = Lexer.get_all_tokens(text)
+    expr(%{tokens: tokens, total: 0}).total
+  end
+
+  defp expr(params) do
     [current_token | rest] = params.tokens
 
     case current_token.type do
@@ -121,7 +126,6 @@ defmodule Interpreter do
 end
 
 text = String.trim(IO.gets("calc> "))
-tokens = Lexer.get_all_tokens(text)
-result = Interpreter.expr(%{tokens: tokens, total: 0})
+result = Interpreter.eval(text)
 
-IO.puts(result.total)
+IO.puts(result)
