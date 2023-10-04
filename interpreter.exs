@@ -120,8 +120,8 @@ defmodule Interpreter do
   end
 end
 
-text = "-40-20*2+8/4+75+31"
+text = String.trim(IO.gets("calc> "))
 tokens = Lexer.get_all_tokens(text)
 result = Interpreter.expr(%{tokens: tokens, total: 0})
-IO.inspect(tokens)
-IO.inspect(result)
+
+IO.puts(result.total)
