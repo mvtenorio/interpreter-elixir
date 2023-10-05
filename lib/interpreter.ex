@@ -59,29 +59,30 @@ end
 defmodule Interpreter do
   def eval(text) do
     tokens = Lexer.get_all_tokens(text)
-    expr(%{tokens: tokens, total: 0}).total
+    expr(%{tokens: tokens, total: 0}, [:add, :sub, :int, :eof]).total
   end
 
-  defp expr(params) do
+  defp expr(params, valid_tokens) do
     [current_token | rest] = params.tokens
+
+    if not Enum.member?(valid_tokens, current_token.type) do
+      raise "Invalid token: #{current_token.type}"
+    end
 
     case current_token.type do
       :add ->
-        result = term(%{tokens: rest, total: params.total})
-        %{result | total: params.total + result.total} |> expr
+        result = term(%{tokens: rest, total: 0})
+        %{result | total: params.total + result.total} |> expr([:add, :sub, :eof])
 
       :sub ->
-        result = term(%{tokens: rest, total: params.total})
-        %{result | total: params.total - result.total} |> expr
+        result = term(%{tokens: rest, total: 0})
+        %{result | total: params.total - result.total} |> expr([:add, :sub, :eof])
 
       :int ->
-        term(params) |> expr
+        term(params) |> expr([:add, :sub, :eof])
 
       :eof ->
         params
-
-      _ ->
-        raise "Invalid token: #{current_token.type}"
     end
   end
 
@@ -117,15 +118,22 @@ defmodule Interpreter do
   defp factor(params) do
     [current_token | rest] = params.tokens
 
-    if current_token.type == :int do
-      %{tokens: rest, total: current_token.value}
-    else
-      raise "Invalid token: #{current_token.type}"
+    case current_token.type do
+      :int ->
+        %{tokens: rest, total: current_token.value}
+
+      :add ->
+        factor(%{params | tokens: rest})
+
+      :sub ->
+        result = factor(%{params | tokens: rest})
+        %{result | total: -result.total}
+
+      :eof ->
+        params
+
+      _ ->
+        raise "Invalid token: #{current_token.type}"
     end
   end
 end
-
-text = String.trim(IO.gets("calc> "))
-result = Interpreter.eval(text)
-
-IO.puts(result)
